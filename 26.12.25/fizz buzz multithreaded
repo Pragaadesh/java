@@ -1,0 +1,66 @@
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntConsumer;
+import java.util.function.Predicate;
+
+class FizzBuzz {
+    private final int n;
+    Lock lock = new ReentrantLock();
+    Condition fizzCondition = lock.newCondition();
+    Condition buzzCondition = lock.newCondition();
+    Condition fizzBuzzCondition = lock.newCondition();
+    Condition numberCondition = lock.newCondition();
+    int count = 1;
+    public FizzBuzz(int n) {
+        this.n = n;
+    }
+
+    void signalCondition() {
+        if (count%3 == 0 && count %5 == 0) fizzBuzzCondition.signal();
+        else if (count %3 == 0) fizzCondition.signal();
+        else if (count%5 == 0) buzzCondition.signal();
+        else numberCondition.signal();
+    }
+
+    void signalAll() {
+        buzzCondition.signal();
+        fizzBuzzCondition.signal();
+        numberCondition.signal();
+        fizzCondition.signal();
+    }
+
+    public void fizz(Runnable printFizz) throws InterruptedException {
+        checkAndRunRunnable(num -> num % 3 == 0 && num % 5 != 0, printFizz, fizzCondition);
+    }
+
+    public void checkAndRunRunnable(Predicate<Integer> condition, Runnable runnable, Condition waitCondition) throws InterruptedException {
+        lock.lock();
+        while ( count <= n ) {
+            if (condition.test(count)) {
+                runnable.run();
+                count++;
+                signalCondition();
+            } else {
+                waitCondition.await();
+            }
+        }
+        signalAll();
+        lock.unlock();
+
+    }
+
+    public void buzz(Runnable printBuzz) throws InterruptedException {
+        checkAndRunRunnable(num -> num % 3 != 0 && num % 5 == 0, printBuzz, buzzCondition);
+    }
+
+    public void fizzbuzz(Runnable printFizzBuzz) throws InterruptedException {
+        checkAndRunRunnable(num -> num % 3 == 0 && num % 5 == 0, printFizzBuzz, fizzBuzzCondition);
+    }
+
+    public void number(IntConsumer printNumber) throws InterruptedException {
+        checkAndRunRunnable(num -> num % 3 != 0 && num % 5 != 0,
+                () -> printNumber.accept(count),
+                numberCondition);
+    }
+}
