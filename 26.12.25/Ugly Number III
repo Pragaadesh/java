@@ -1,0 +1,36 @@
+class Solution {
+    public int nthUglyNumber(int n, int a, int b, int c) {
+        long start=1;
+        int min=Math.min(a,b);
+        long end=n*Math.min(min,c);
+        long ab=lcm(a,b);
+        long bc=lcm(b,c);
+        long ac=lcm(a,c);
+        long abc=lcm(ab,c);
+
+        while(start<=end){
+            long mid=start+(end-start)/2;
+            long lesserElCount=uglyNosLessThanEqlMid(a,b,c,mid,ab,bc,ac,abc);
+            if(lesserElCount>=n){
+                end=mid-1;
+            }else{
+                start=mid+1;
+            }
+        }
+        
+        return (int)start;
+    }
+    public static long uglyNosLessThanEqlMid(int a,int b,int c,long mid,long ab,long bc,long ac,long abc){
+        return mid/a+mid/b+mid/c-mid/ab-mid/bc-mid/ac+mid/abc;
+    }
+    public static long lcm(long a,long b){
+        long min=Math.min(a,b);
+        long max=Math.max(a,b);
+        long gcd=GCD(min,max);
+        return (a/gcd)*b; // (a*b)/gcd here a*b can cause IntegerOverflowError
+    }
+    public static long GCD(long a,long b){
+        if(a==0) return b;
+        return GCD(b%a,a);
+    }
+}
